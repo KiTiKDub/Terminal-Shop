@@ -19,13 +19,11 @@ type listStyle struct {
 	quitText     lipgloss.Style
 }
 
-func setListStyle(darkBG bool) listStyle {
+func setListStyle() listStyle {
 	var style listStyle
 	style.title = lipgloss.NewStyle().MarginLeft(2)
 	style.item = lipgloss.NewStyle().PaddingLeft(4)
 	style.selectedItem = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
-	style.pagination = list.DefaultStyles(darkBG).PaginationStyle.PaddingLeft(4)
-	style.help = list.DefaultStyles(darkBG).HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	style.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
 	return style
 }
@@ -57,6 +55,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 type item struct {
 	title       string
 	description string
+	price       string
 }
 
 func (i item) Title() string       { return i.title }
@@ -65,13 +64,13 @@ func (i item) FilterValue() string { return "" }
 
 func initialModel() model {
 	items := []list.Item{
-		item{"Disburser", getDisburserDesc()},
-		item{"QwikRef", getQwikRefDesc()},
-		item{"ChopChop!", getChopChopDesc()},
-		item{"Mangl3r", getMangl3rDesc()},
-		item{"Distork", getDistorkDesc()},
-		item{"Krush", getKrushDesc()},
-		item{"KiTiK Kollection Vol 1", getKollectionV1Desc()},
+		item{"Disburser", getDisburserDesc(), "FREE"},
+		item{"QwikRef", getQwikRefDesc(), "FREE"},
+		item{"ChopChop!", getChopChopDesc(), "FREE"},
+		item{"Mangl3r", getMangl3rDesc(), "FREE"},
+		item{"Distork", getDistorkDesc(), "FREE"},
+		item{"Krush", getKrushDesc(), "FREE"},
+		item{"KiTiK Kollection Vol 1", getKollectionV1Desc(), "$4.99"},
 	}
 
 	const defaultWidth = 20
@@ -83,13 +82,13 @@ func initialModel() model {
 	l := list.New(items, d, defaultWidth, listHeight)
 	l.Title = "KiTiK Store"
 	m := model{list: l}
-	m.updateListStyles(true)
+	m.updateListStyles()
 
 	return m
 }
 
-func (m *model) updateListStyles(isDark bool) {
-	m.styles = setListStyle(isDark)
+func (m *model) updateListStyles() {
+	m.styles = setListStyle()
 	m.list.Styles.Title = m.styles.title
 	m.list.Styles.PaginationStyle = m.styles.pagination
 	m.list.Styles.HelpStyle = m.styles.help

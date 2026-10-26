@@ -8,9 +8,8 @@ import (
 )
 
 var (
-	descriptionStyle = lipgloss.NewStyle().Padding(1, 2).MarginTop(1)
-	titleStyle       = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).Padding(0, 1)
-	infoStyle        = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).Padding(0, 1)
+	descriptionStyle = lipgloss.NewStyle().Padding(1, 2)
+	titleStyle       = lipgloss.NewStyle().Foreground(lipgloss.BrightRed).Bold(true).Padding(1, 2)
 )
 
 func headerView() string {
@@ -39,10 +38,11 @@ func createViewport(w int, h int) viewport.Model {
 
 func (m model) descView(item item) string {
 
-	// contentWidth := m.list.Width() * 2
+	title := titleStyle.Render("PRICE: " + item.price)
+	description := descriptionStyle.Width(m.viewport.Width()).Render(item.description)
+	view := lipgloss.JoinVertical(lipgloss.Left, title, description)
 
-	// return descriptionStyle.Render(headerView(), item.description, footerView(contentWidth))
-	return descriptionStyle.Width(m.viewport.Width()).Render(item.description)
+	return view
 
 }
 
