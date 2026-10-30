@@ -21,6 +21,11 @@ const (
 	viewportPane
 )
 
+var (
+	activeBorderStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.BrightRed)
+	inactiveBorderStyle = lipgloss.NewStyle().Border(lipgloss.HiddenBorder())
+)
+
 type model struct {
 	list          list.Model
 	viewport      viewport.Model
@@ -39,15 +44,22 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width / 3)
+
+		listWidth := msg.Width / 3
+		listHeight := msg.Height
+		viewportWidth := 2 * msg.Width / 3
+		viewportHeight := msg.Height
+
+		m.list.SetWidth(listWidth)
+		m.list.SetHeight(listHeight - 4)
 
 		if !m.viewportReady {
-			m.viewport = createViewport(2*msg.Width/3, msg.Height)
+			m.viewport = createViewport(viewportWidth-2, viewportHeight-4)
 			m.lastSelected = ""
 			m.viewportReady = true
 		} else {
-			m.viewport.SetWidth(2 * msg.Width / 3)
-			m.viewport.SetHeight(msg.Height)
+			m.viewport.SetWidth(viewportWidth - 2)
+			m.viewport.SetHeight(viewportHeight - 4)
 		}
 
 		m.syncViewport()
@@ -116,16 +128,37 @@ func (m model) View() tea.View {
 	if !m.viewportReady {
 		desc = "Loading..."
 	} else {
-		desc = m.viewport.View()
+		topArrow, bottomArrow := setViewportArrows(m.viewport)
+		// desc = m.viewport.View()
+		desc = lipgloss.JoinVertical(lipgloss.Left, topArrow, m.viewport.View(), bottomArrow)
 	}
 
+	leftStyle, rightStyle := setActiveBorder(m.focus)
+
 	var s strings.Builder
-	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.list.View(), desc))
+
+	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(m.list.View()), rightStyle.Render(desc)))
 
 	v := tea.NewView("\n" + s.String())
 	v.AltScreen = true
 
 	return v
+}
+
+func setActiveBorder(focus focusPane) (lipgloss.Style, lipgloss.Style) {
+	leftStyle := inactiveBorderStyle
+	rightStyle := inactiveBorderStyle
+
+	switch focus {
+	case listPane:
+		leftStyle = activeBorderStyle
+	case viewportPane:
+		rightStyle = activeBorderStyle
+
+	}
+
+	return leftStyle, rightStyle
+
 }
 
 func main() {

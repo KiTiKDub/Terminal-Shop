@@ -9,7 +9,7 @@ import (
 
 var (
 	descriptionStyle = lipgloss.NewStyle().Padding(1, 2)
-	titleStyle       = lipgloss.NewStyle().Foreground(lipgloss.BrightRed).Bold(true).Padding(1, 2)
+	titleStyle       = lipgloss.NewStyle().Foreground(lipgloss.BrightRed).Bold(true).Padding(0, 2)
 )
 
 func headerView() string {
@@ -36,7 +36,7 @@ func createViewport(w int, h int) viewport.Model {
 	return viewport
 }
 
-func (m model) descView(item item) string {
+func (m model) setViewportContent(item item) string {
 
 	title := titleStyle.Render("PRICE: " + item.price)
 	description := descriptionStyle.Width(m.viewport.Width()).Render(item.description)
@@ -46,12 +46,33 @@ func (m model) descView(item item) string {
 
 }
 
+func setViewportArrows(vp viewport.Model) (string, string) {
+	arrowStyle := lipgloss.NewStyle().Width(vp.Width()).Align(lipgloss.Left).Foreground(lipgloss.Color("241"))
+
+	topIndicator := ""
+	bottomIndicator := ""
+
+	if vp.TotalLineCount() > vp.Height() {
+		if !vp.AtTop() {
+			topIndicator = "↑ More Above"
+		}
+		if !vp.AtBottom() {
+			bottomIndicator = "↓ More Below"
+		}
+	}
+
+	topArrow := arrowStyle.Render(topIndicator)
+	bottomArrow := arrowStyle.Render(bottomIndicator)
+
+	return topArrow, bottomArrow
+}
+
 func (m *model) syncViewport() {
 	if selected := m.list.SelectedItem(); selected != nil {
 		if item, ok := selected.(item); ok {
 			if m.lastSelected == "" || item.title != m.lastSelected {
 				m.lastSelected = item.title
-				m.viewport.SetContent(m.descView(item))
+				m.viewport.SetContent(m.setViewportContent(item))
 				m.viewport.GotoTop()
 			}
 		}

@@ -74,12 +74,12 @@ func initialModel() model {
 	}
 
 	const defaultWidth = 20
-	const listHeight = 14
+	const defaultHeight = 14
 
 	d := list.NewDefaultDelegate()
 	d.ShowDescription = false
 
-	l := list.New(items, d, defaultWidth, listHeight)
+	l := list.New(items, d, defaultWidth, defaultHeight)
 	l.Title = "KiTiK Store"
 	m := model{list: l}
 	m.updateListStyles()
