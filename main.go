@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/viewport"
@@ -19,6 +18,7 @@ type focusPane int
 const (
 	listPane focusPane = iota
 	viewportPane
+	pluginPane
 )
 
 var (
@@ -27,14 +27,16 @@ var (
 )
 
 type model struct {
-	list          list.Model
-	viewport      viewport.Model
-	viewportReady bool
-	lastSelected  string
-	choice        string
-	styles        listStyle
-	quitting      bool
-	focus         focusPane
+	list           list.Model
+	downloadList   HorizontalList
+	viewport       viewport.Model
+	pluginViewport viewport.Model
+	lastSelected   string
+	choice         string
+	styles         listStyle
+	quitting       bool
+	focus          focusPane
+	header         string
 }
 
 func (m model) Init() tea.Cmd {
@@ -45,24 +47,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 
+		headerHeight := m.getHeaderLineCount()
+
 		listWidth := msg.Width / 3
-		listHeight := msg.Height
+		listHeight := msg.Height - headerHeight
 		viewportWidth := 2 * msg.Width / 3
-		viewportHeight := msg.Height
+		viewportHeight := msg.Height - headerHeight
 
 		m.list.SetWidth(listWidth)
-		m.list.SetHeight(listHeight - 4)
+		m.list.SetHeight(listHeight)
 
-		if !m.viewportReady {
-			m.viewport = createViewport(viewportWidth-2, viewportHeight-4)
-			m.lastSelected = ""
-			m.viewportReady = true
-		} else {
-			m.viewport.SetWidth(viewportWidth - 2)
-			m.viewport.SetHeight(viewportHeight - 4)
-		}
-
-		m.syncViewport()
+		m.viewport.SetWidth(viewportWidth - 2)
+		m.viewport.SetHeight(viewportHeight)
+		m.pluginViewport.SetWidth(msg.Width)
+		m.pluginViewport.SetHeight(viewportHeight - 4)
 
 		return m, nil
 
@@ -76,17 +74,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
 				m.choice = string(i.title)
+				m.focus = pluginPane
+				m.setPluginViewportContent()
 			}
 			return m, nil
-		case "backspace":
-			m.choice = ""
-			return m, nil
-		case "tab":
-			if m.focus == listPane {
-				m.focus = viewportPane
+		case "left":
+			if m.choice != "" {
+				m.downloadList.MoveLeft()
+				m.setPluginViewportContent()
+			}
 
-			} else {
-				m.focus = listPane
+		case "right":
+			if m.choice != "" {
+				m.downloadList.MoveRight()
+				m.setPluginViewportContent()
+			}
+
+		case "backspace", "esc":
+			m.choice = ""
+			m.focus = listPane
+			return m, nil
+
+		case "tab":
+			if m.focus != pluginPane {
+				if m.focus == listPane {
+					m.focus = viewportPane
+
+				} else {
+					m.focus = listPane
+				}
 			}
 			return m, nil
 		}
@@ -105,9 +121,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case viewportPane:
 		m.viewport, cmd = m.viewport.Update(msg)
 		cmds = append(cmds, cmd)
+	case pluginPane:
+		m.pluginViewport, cmd = m.pluginViewport.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
-	m.syncViewport()
+	m.syncDescViewport()
 
 	return m, tea.Batch(cmds...)
 }
@@ -118,28 +137,12 @@ func (m model) View() tea.View {
 		return tea.NewView(m.styles.quitText.Render("Thanks for shopping!"))
 	}
 	if m.choice != "" {
-		v := tea.NewView(openPluginView(m))
+		v := tea.NewView(buildPluginView(m))
 		v.AltScreen = true
 		return v
 	}
 
-	var desc string
-
-	if !m.viewportReady {
-		desc = "Loading..."
-	} else {
-		topArrow, bottomArrow := setViewportArrows(m.viewport)
-		// desc = m.viewport.View()
-		desc = lipgloss.JoinVertical(lipgloss.Left, topArrow, m.viewport.View(), bottomArrow)
-	}
-
-	leftStyle, rightStyle := setActiveBorder(m.focus)
-
-	var s strings.Builder
-
-	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(m.list.View()), rightStyle.Render(desc)))
-
-	v := tea.NewView("\n" + s.String())
+	v := tea.NewView(buildMainView(m))
 	v.AltScreen = true
 
 	return v
@@ -154,11 +157,40 @@ func setActiveBorder(focus focusPane) (lipgloss.Style, lipgloss.Style) {
 		leftStyle = activeBorderStyle
 	case viewportPane:
 		rightStyle = activeBorderStyle
-
 	}
 
 	return leftStyle, rightStyle
 
+}
+
+func buildMainView(m model) string {
+
+	topArrow, bottomArrow := setViewportArrows(m.viewport)
+	desc := lipgloss.JoinVertical(lipgloss.Left, topArrow, m.viewport.View(), bottomArrow)
+
+	leftStyle, rightStyle := setActiveBorder(m.focus)
+
+	body := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Width(m.list.Width()).Render(m.list.View()), rightStyle.Render(desc))
+	return lipgloss.JoinVertical(lipgloss.Left, m.header, body)
+}
+
+func buildPluginView(m model) string {
+	topArrow, bottomArrow := setViewportArrows(m.pluginViewport)
+	viewportString := lipgloss.JoinVertical(lipgloss.Left, topArrow, m.pluginViewport.View(), bottomArrow)
+	return lipgloss.JoinVertical(lipgloss.Left, m.header, viewportString)
+}
+
+func initialModel() model {
+
+	m := model{}
+	m.setProductList()
+	m.updateProductListStyles()
+	m.setDownloadList()
+	m.setHeaderString("KiTiK Store")
+	m.setViewport()
+	m.setPluginViewport()
+
+	return m
 }
 
 func main() {

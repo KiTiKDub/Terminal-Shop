@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strings"
-
 	"charm.land/bubbles/v2/viewport"
 	"charm.land/lipgloss/v2"
 )
@@ -12,38 +10,25 @@ var (
 	titleStyle       = lipgloss.NewStyle().Foreground(lipgloss.BrightRed).Bold(true).Padding(0, 2)
 )
 
-func headerView() string {
-	title := titleStyle.Render("Description")
-	return title
+func (m *model) setViewport() {
+
+	m.viewport = viewport.New(viewport.WithWidth(0), viewport.WithHeight(0))
+
+	//This probably has something to do with the misalignment
+	m.viewport.YPosition = m.getHeaderLineCount()
+
+	m.viewport.HighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Background(lipgloss.Color("34"))
+	m.viewport.SelectedHighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Background(lipgloss.Color("47"))
+	m.viewport.HighlightNext()
 }
 
-func footerView(w int) string {
-	line := strings.Repeat("-", max(0, w))
-	return line
-}
-
-func createViewport(w int, h int) viewport.Model {
-	headerHeight := lipgloss.Height(headerView())
-	footerHeight := lipgloss.Height(footerView(w))
-
-	viewport := viewport.New(viewport.WithWidth(w), viewport.WithHeight(h-(headerHeight+footerHeight)))
-	viewport.YPosition = headerHeight
-
-	viewport.HighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Background(lipgloss.Color("34"))
-	viewport.SelectedHighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Background(lipgloss.Color("47"))
-	viewport.HighlightNext()
-
-	return viewport
-}
-
-func (m model) setViewportContent(item item) string {
+func (m model) setDescViewportContent(item item) string {
 
 	title := titleStyle.Render("PRICE: " + item.price)
 	description := descriptionStyle.Width(m.viewport.Width()).Render(item.description)
 	view := lipgloss.JoinVertical(lipgloss.Left, title, description)
 
 	return view
-
 }
 
 func setViewportArrows(vp viewport.Model) (string, string) {
@@ -67,12 +52,12 @@ func setViewportArrows(vp viewport.Model) (string, string) {
 	return topArrow, bottomArrow
 }
 
-func (m *model) syncViewport() {
+func (m *model) syncDescViewport() {
 	if selected := m.list.SelectedItem(); selected != nil {
 		if item, ok := selected.(item); ok {
 			if m.lastSelected == "" || item.title != m.lastSelected {
 				m.lastSelected = item.title
-				m.viewport.SetContent(m.setViewportContent(item))
+				m.viewport.SetContent(m.setDescViewportContent(item))
 				m.viewport.GotoTop()
 			}
 		}

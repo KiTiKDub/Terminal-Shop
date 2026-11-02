@@ -22,8 +22,8 @@ type listStyle struct {
 func setListStyle() listStyle {
 	var style listStyle
 	style.title = lipgloss.NewStyle().MarginLeft(2)
-	style.item = lipgloss.NewStyle().PaddingLeft(4)
-	style.selectedItem = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+	style.item = lipgloss.NewStyle().PaddingLeft(4).MarginRight(2)
+	style.selectedItem = lipgloss.NewStyle().Background(lipgloss.Cyan).PaddingRight(1).Foreground(lipgloss.White).MarginLeft(4)
 	style.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
 	return style
 }
@@ -45,7 +45,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fn := d.styles.item.Render
 	if index == m.Index() {
 		fn = func(s ...string) string {
-			return d.styles.selectedItem.Render("> " + strings.Join(s, " "))
+			return d.styles.selectedItem.Render(strings.Join(s, " "))
 		}
 	}
 
@@ -62,7 +62,7 @@ func (i item) Title() string       { return i.title }
 func (i item) Description() string { return i.description }
 func (i item) FilterValue() string { return "" }
 
-func initialModel() model {
+func (m *model) setProductList() {
 	items := []list.Item{
 		item{"Disburser", getDisburserDesc(), "FREE"},
 		item{"QwikRef", getQwikRefDesc(), "FREE"},
@@ -81,13 +81,13 @@ func initialModel() model {
 
 	l := list.New(items, d, defaultWidth, defaultHeight)
 	l.Title = "KiTiK Store"
-	m := model{list: l}
-	m.updateListStyles()
-
-	return m
+	l.SetShowHelp(false)
+	l.SetShowStatusBar(false)
+	l.SetShowTitle(false)
+	m.list = l
 }
 
-func (m *model) updateListStyles() {
+func (m *model) updateProductListStyles() {
 	m.styles = setListStyle()
 	m.list.Styles.Title = m.styles.title
 	m.list.Styles.PaginationStyle = m.styles.pagination
