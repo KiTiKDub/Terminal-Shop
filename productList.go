@@ -66,7 +66,7 @@ func (m *model) setProductList() {
 	items := []list.Item{
 		item{"Disburser", getDisburserDesc(), "FREE"},
 		item{"QwikRef", getQwikRefDesc(), "FREE"},
-		item{"ChopChop!", getChopChopDesc(), "FREE"},
+		item{"ChopChop", getChopChopDesc(), "FREE"},
 		item{"Mangl3r", getMangl3rDesc(), "FREE"},
 		item{"Distork", getDistorkDesc(), "FREE"},
 		item{"Krush", getKrushDesc(), "FREE"},

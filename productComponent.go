@@ -22,7 +22,7 @@ func (m *model) setPluginViewportContent() {
 		msg = renderANSIHalfBlocks("Disburser.jpg", m.list.Width()*3) //change width calculation to be straignt from teamsg eventually
 	case "QwikRef":
 		msg = renderANSIHalfBlocks("QwikRef.png", m.list.Width()*3)
-	case "ChopChop!":
+	case "ChopChop":
 		msg = renderANSIHalfBlocks("chopchop.jpg", m.list.Width()*3)
 	case "Mangl3r":
 		msg = renderANSIHalfBlocks("Mangl3r.jpg", m.list.Width()*3)

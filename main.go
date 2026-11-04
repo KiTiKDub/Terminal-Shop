@@ -33,6 +33,7 @@ type model struct {
 	pluginViewport viewport.Model
 	lastSelected   string
 	choice         string
+	downloadMsg    string
 	styles         listStyle
 	quitting       bool
 	focus          focusPane
@@ -71,13 +72,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "enter":
+
+			if m.focus == pluginPane && m.downloadList.SelectedItem().title == "Download" {
+				m.downloadMsg = download(m.choice)
+				return m, nil
+			}
+
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
 				m.choice = string(i.title)
 				m.focus = pluginPane
 				m.setPluginViewportContent()
+				return m, nil
 			}
-			return m, nil
+
 		case "left":
 			if m.choice != "" {
 				m.downloadList.MoveLeft()
@@ -92,6 +100,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "backspace", "esc":
 			m.choice = ""
+			m.downloadMsg = ""
 			m.focus = listPane
 			return m, nil
 
@@ -135,6 +144,11 @@ func (m model) View() tea.View {
 
 	if m.quitting {
 		return tea.NewView(m.styles.quitText.Render("Thanks for shopping!"))
+	}
+	if m.downloadMsg != "" {
+		v := tea.NewView(m.downloadMsg)
+		v.AltScreen = true
+		return v
 	}
 	if m.choice != "" {
 		v := tea.NewView(buildPluginView(m))
