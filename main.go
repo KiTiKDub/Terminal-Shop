@@ -170,7 +170,8 @@ func buildMainView(m model) string {
 
 	leftStyle, rightStyle := setActiveBorder(m.focus)
 
-	body := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Width(m.list.Width()).Render(m.list.View()), rightStyle.Render(desc))
+	body := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Width(m.list.Width()).Render(m.list.View()),
+		rightStyle.Render(desc))
 	return lipgloss.JoinVertical(lipgloss.Left, m.header, body)
 }
 
