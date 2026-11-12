@@ -1,8 +1,14 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"log"
+	"net"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/viewport"
@@ -11,6 +17,12 @@ import (
 
 	_ "image/jpeg"
 	_ "image/png"
+
+	"charm.land/ssh"
+	"charm.land/wish/v2"
+	"charm.land/wish/v2/activeterm"
+	btm "charm.land/wish/v2/bubbletea"
+	"charm.land/wish/v2/logging"
 )
 
 type focusPane int
@@ -21,12 +33,18 @@ const (
 	pluginPane
 )
 
+const (
+	host = "localhost"
+	port = "11111"
+)
+
 var (
 	activeBorderStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.BrightRed)
 	inactiveBorderStyle = lipgloss.NewStyle().Border(lipgloss.HiddenBorder())
 )
 
 type model struct {
+	session        ssh.Session
 	list           list.Model
 	downloadList   HorizontalList
 	viewport       viewport.Model
@@ -208,9 +226,51 @@ func initialModel() model {
 	return m
 }
 
+func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+
+	m := initialModel()
+	m.session = s
+
+	return m, []tea.ProgramOption{}
+
+}
+
 func main() {
-	if _, err := tea.NewProgram(initialModel()).Run(); err != nil {
-		fmt.Println("Error running program:", err)
+
+	s, err := wish.NewServer(
+		wish.WithAddress(net.JoinHostPort(host, port)),
+		wish.WithHostKeyPath(".ssh/id_ed25519"),
+		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			return true
+		}),
+		wish.WithMiddleware(
+			btm.Middleware(teaHandler),
+			activeterm.Middleware(),
+			logging.Middleware(),
+		),
+	)
+	if err != nil {
+		log.Fatalln("Could not create server", err)
+	}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	log.Printf("Starting SSH server on %s:%s", host, port)
+
+	go func() {
+		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
+			log.Fatalln("Could not start server", "error", err)
+			done <- nil
+		}
+	}()
+
+	<-done
+
+	log.Println("Stopping SSH server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatalln(err)
 		os.Exit(1)
 	}
 }
