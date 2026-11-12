@@ -14,7 +14,6 @@ func (m *model) setViewport() {
 
 	m.viewport = viewport.New(viewport.WithWidth(0), viewport.WithHeight(0))
 
-	//This probably has something to do with the misalignment
 	m.viewport.YPosition = m.getHeaderLineCount()
 
 	m.viewport.HighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Background(lipgloss.Color("34"))
@@ -24,7 +23,7 @@ func (m *model) setViewport() {
 
 func (m model) setDescViewportContent(item item) string {
 
-	title := titleStyle.Render("PRICE: " + item.price)
+	title := titleStyle.Render(item.title + "\nPRICE: " + item.price)
 	description := descriptionStyle.Width(m.viewport.Width()).Render(item.description)
 	view := lipgloss.JoinVertical(lipgloss.Left, title, description)
 

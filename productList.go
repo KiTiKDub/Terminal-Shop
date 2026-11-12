@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type listStyle struct {
@@ -42,14 +42,19 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	}
 
 	str := fmt.Sprintf("%s", i.Title())
-	fn := d.styles.item.Render
+	wVal := m.Width()
+
+	style := d.styles.item
 	if index == m.Index() {
-		fn = func(s ...string) string {
-			return d.styles.selectedItem.Render(strings.Join(s, " "))
-		}
+		style = d.styles.selectedItem
 	}
 
-	fmt.Fprint(w, fn(str))
+	if wVal > 0 {
+		availWidth := max(0, wVal-style.GetHorizontalFrameSize())
+		str = ansi.Truncate(str, availWidth, "...")
+	}
+
+	fmt.Fprint(w, style.Render(str))
 }
 
 type item struct {

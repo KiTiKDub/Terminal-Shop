@@ -14,24 +14,25 @@ var (
 func (m *model) setPluginViewportContent() {
 
 	var msg string
-	instructions := horzListStyle.Width(m.list.Width() * 3).Render("Download straight from the server or from Gumroad")
-	downloadList := horzListStyle.Width(m.list.Width() * 3).Render(m.downloadList.View())
+	vpWidth := m.pluginViewport.Width()
+	instructions := horzListStyle.Width(vpWidth).Render("Download straight from the server or from Gumroad")
+	downloadList := horzListStyle.Width(vpWidth).Render(m.downloadList.View())
 
 	switch m.choice {
 	case "Disburser":
-		msg = renderANSIHalfBlocks("Disburser.jpg", m.list.Width()*3) //change width calculation to be straignt from teamsg eventually
+		msg = renderANSIHalfBlocks("Disburser.jpg", vpWidth)
 	case "QwikRef":
-		msg = renderANSIHalfBlocks("QwikRef.png", m.list.Width()*3)
+		msg = renderANSIHalfBlocks("QwikRef.png", vpWidth)
 	case "ChopChop":
-		msg = renderANSIHalfBlocks("chopchop.jpg", m.list.Width()*3)
+		msg = renderANSIHalfBlocks("chopchop.jpg", vpWidth)
 	case "Mangl3r":
-		msg = renderANSIHalfBlocks("Mangl3r.jpg", m.list.Width()*3)
+		msg = renderANSIHalfBlocks("Mangl3r.jpg", vpWidth)
 	case "Distork":
-		msg = renderANSIHalfBlocks("Distork.png", m.list.Width()*3) + "\n" + strconv.Itoa(m.list.Width())
+		msg = renderANSIHalfBlocks("Distork.png", vpWidth) + "\n" + strconv.Itoa(vpWidth)
 	case "Krush":
-		msg = renderANSIHalfBlocks("KITIK_LOGO_NO_BKGD.png", m.list.Width()*3)
+		msg = renderANSIHalfBlocks("KITIK_LOGO_NO_BKGD.png", vpWidth)
 	case "KiTiK Kollection Vol 1":
-		msg = renderANSIHalfBlocks("kol.jpg", m.list.Width()*3)
+		msg = renderANSIHalfBlocks("kol.jpg", vpWidth)
 	default:
 		msg = "default" + m.choice
 	}

@@ -67,19 +67,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 
 		headerHeight := m.getHeaderLineCount()
+		bodyHeight := max(0, msg.Height-headerHeight)
+
+		borderV := activeBorderStyle.GetVerticalBorderSize()
+		borderH := activeBorderStyle.GetHorizontalBorderSize()
+		arrowHeight := 2
 
 		listWidth := msg.Width / 3
-		listHeight := msg.Height - headerHeight
-		viewportWidth := 2 * msg.Width / 3
-		viewportHeight := msg.Height - headerHeight
+		viewportWidth := msg.Width - listWidth
 
-		m.list.SetWidth(listWidth)
+		listHeight := max(0, bodyHeight-borderV)
+		viewportHeight := max(0, bodyHeight-borderV-arrowHeight)
+
+		m.list.SetWidth(max(0, listWidth-borderH))
 		m.list.SetHeight(listHeight)
 
-		m.viewport.SetWidth(viewportWidth - 2)
+		m.viewport.SetWidth(max(0, viewportWidth-borderH))
 		m.viewport.SetHeight(viewportHeight)
 		m.pluginViewport.SetWidth(msg.Width)
-		m.pluginViewport.SetHeight(viewportHeight - 4)
+		m.pluginViewport.SetHeight(max(0, bodyHeight-arrowHeight))
 
 		return m, nil
 
@@ -201,9 +207,11 @@ func buildMainView(m model) string {
 	desc := lipgloss.JoinVertical(lipgloss.Left, topArrow, m.viewport.View(), bottomArrow)
 
 	leftStyle, rightStyle := setActiveBorder(m.focus)
+	borderH := activeBorderStyle.GetHorizontalBorderSize()
+	leftBox := leftStyle.Width(m.list.Width() + borderH).Render(m.list.View())
+	rightBox := rightStyle.Width(m.viewport.Width() + borderH).Render(desc)
 
-	body := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Width(m.list.Width()).Render(m.list.View()),
-		rightStyle.Render(desc))
+	body := lipgloss.JoinHorizontal(lipgloss.Top, leftBox, rightBox)
 	return lipgloss.JoinVertical(lipgloss.Left, m.header, body)
 }
 
