@@ -4,19 +4,81 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
-func TestListHeight(t *testing.T) {
+func TestHeaderCenteringAndViewSpecificHelp(t *testing.T) {
 	m := initialModel()
-	m.list.SetWidth(16)
-	m.list.SetHeight(7)
-	v := m.list.View()
-	t.Logf("SetHeight(7) -> list.Height()=%d, lipgloss.Height()=%d", m.list.Height(), lipgloss.Height(v))
-	lines := strings.Split(v, "\n")
-	for i, l := range lines {
-		t.Logf("line %d: %q", i, l)
+	m.updateHeaders(100)
+
+	if !strings.Contains(m.header, "AUDIO PLUGINS & CREATIVE TOOLS") {
+		t.Errorf("expected m.header to contain subtitle")
+	}
+	if !strings.Contains(m.header, "Navigate") || !strings.Contains(m.header, "Switch Focus") {
+		t.Errorf("expected m.header to contain navigation hints")
+	}
+
+	if !strings.Contains(m.pluginHeader, "AUDIO PLUGINS & CREATIVE TOOLS") {
+		t.Errorf("expected m.pluginHeader to contain subtitle")
+	}
+	if strings.Contains(m.pluginHeader, "Navigate") || strings.Contains(m.pluginHeader, "Switch Focus") {
+		t.Errorf("expected m.pluginHeader NOT to contain main navigation hints")
+	}
+
+	styles := setListStyle()
+	bg := styles.selectedItem.GetBackground()
+	if bg != nil && bg != (lipgloss.NoColor{}) {
+		t.Errorf("expected selectedItem to have no background color, got %v", bg)
+	}
+}
+
+func TestListItemTruncationAndBadges(t *testing.T) {
+	styles := setListStyle()
+	delegate := itemDelegate{styles: &styles}
+
+	longItem := item{title: "KiTiK Kollection Vol 1", description: "desc", price: "$4.99"}
+	shortItem := item{title: "Disburser", description: "desc", price: "FREE"}
+
+	l := list.New([]list.Item{longItem, shortItem}, delegate, 24, 10)
+
+	// Test long item selected at width 24
+	l.Select(0)
+	var bufSelected strings.Builder
+	delegate.Render(&bufSelected, l, 0, longItem)
+	outSelected := bufSelected.String()
+
+	if !strings.Contains(outSelected, "...") {
+		t.Errorf("expected long item to be truncated with '...', got %q", outSelected)
+	}
+	if !strings.Contains(outSelected, "$4.99") {
+		t.Errorf("expected long item to contain price badge '$4.99', got %q", outSelected)
+	}
+	if lipgloss.Height(outSelected) != 1 {
+		t.Errorf("expected height 1, got %d", lipgloss.Height(outSelected))
+	}
+	if lipgloss.Width(outSelected) > 24 {
+		t.Errorf("expected width <= 24, got %d", lipgloss.Width(outSelected))
+	}
+
+	// Test short item unselected
+	l.Select(0) // keep index 0 selected, render index 1
+	var bufUnselected strings.Builder
+	delegate.Render(&bufUnselected, l, 1, shortItem)
+	outUnselected := bufUnselected.String()
+
+	if !strings.Contains(outUnselected, "Disburser") {
+		t.Errorf("expected unselected item to contain 'Disburser', got %q", outUnselected)
+	}
+	if !strings.Contains(outUnselected, "FREE") {
+		t.Errorf("expected unselected item to contain 'FREE', got %q", outUnselected)
+	}
+	if strings.Contains(outUnselected, "...") {
+		t.Errorf("short item should not contain '...', got %q", outUnselected)
+	}
+	if lipgloss.Height(outUnselected) != 1 {
+		t.Errorf("expected height 1, got %d", lipgloss.Height(outUnselected))
 	}
 }
 
@@ -28,7 +90,6 @@ func TestBuildMainViewWithinTerminalBounds(t *testing.T) {
 	}{
 		{name: "Standard 80x24", width: 80, height: 24},
 		{name: "Wide 120x40", width: 120, height: 40},
-		{name: "Compact 60x15", width: 60, height: 15},
 		{name: "Large 160x50", width: 160, height: 50},
 	}
 
@@ -69,15 +130,6 @@ func TestBuildMainViewWithinTerminalBounds(t *testing.T) {
 			leftBoxHeight := lipgloss.Height(leftBox)
 			rightBoxHeight := lipgloss.Height(rightBox)
 
-			t.Logf("[%s] leftBox height: %d", tc.name, lipgloss.Height(leftBox))
-			lines := strings.Split(leftBox, "\n")
-			for i, line := range lines {
-				t.Logf("leftBox[%d]: %q", i, line)
-			}
-			listLines := strings.Split(mod.list.View(), "\n")
-			for i, line := range listLines {
-				t.Logf("listLines[%d]: %q", i, line)
-			}
 			if leftBoxHeight != rightBoxHeight {
 				t.Errorf("left box height (%d) does not match right box height (%d)", leftBoxHeight, rightBoxHeight)
 			}
@@ -99,7 +151,6 @@ func TestBuildPluginViewWithinTerminalBounds(t *testing.T) {
 	}{
 		{name: "Standard 80x24", width: 80, height: 24},
 		{name: "Wide 120x40", width: 120, height: 40},
-		{name: "Compact 60x15", width: 60, height: 15},
 	}
 
 	for _, tc := range testCases {

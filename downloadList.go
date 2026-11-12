@@ -28,29 +28,44 @@ func (h HorizontalList) View() string {
 	var renderedItems []string
 
 	normalStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")).
+		Background(lipgloss.Color("236")).
+		Foreground(lipgloss.Color("248")).
+		Padding(0, 2).
 		MarginRight(2)
 
 	selectedStyle := lipgloss.NewStyle().
-		Background(lipgloss.Cyan).
-		Foreground(lipgloss.White).
+		Background(lipgloss.Color("39")).
+		Foreground(lipgloss.Color("16")).
+		Bold(true).
+		Padding(0, 2).
 		MarginRight(2)
 
 	for i, item := range h.items {
+		label := item.Title()
+		if label == "Download" {
+			label = "⬇ Download Direct"
+		} else if label == "Gumroad" {
+			label = "🛒 Gumroad Store"
+		}
+
 		if i == h.cursor {
-			renderedItems = append(renderedItems, selectedStyle.Render(item.Title()))
+			renderedItems = append(renderedItems, selectedStyle.Render(label))
 		} else {
-			renderedItems = append(renderedItems, normalStyle.Render(item.Title()))
+			renderedItems = append(renderedItems, normalStyle.Render(label))
 		}
 	}
 
-	// Join items side-by-side instead of top-to-bottom
-	return lipgloss.JoinHorizontal(lipgloss.Left, renderedItems...)
+	buttons := lipgloss.JoinHorizontal(lipgloss.Center, renderedItems...)
+	hints := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("242")).
+		Render("\n[← / →] Switch Option  •  [Enter] Confirm  •  [Esc] Back to Catalog")
+
+	return lipgloss.JoinVertical(lipgloss.Center, buttons, hints)
 }
 
 func (m *model) setDownloadList() {
 	m.downloadList.items = []item{
-		{"Download", "Download straight from the server", "N/A"},
-		{"Gumroad", "Purchase Straight from Gumraod", "N/A"},
+		{"Download", "Download straight from the server", "N/A", false},
+		{"Gumroad", "Purchase Straight from Gumraod", "N/A", false},
 	}
 }

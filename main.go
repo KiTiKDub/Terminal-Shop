@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	activeBorderStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.BrightRed)
-	inactiveBorderStyle = lipgloss.NewStyle().Border(lipgloss.HiddenBorder())
+	activeBorderStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("39"))
+	inactiveBorderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("238"))
 )
 
 type model struct {
@@ -56,6 +56,7 @@ type model struct {
 	quitting       bool
 	focus          focusPane
 	header         string
+	pluginHeader   string
 }
 
 func (m model) Init() tea.Cmd {
@@ -66,8 +67,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 
+		m.updateHeaders(msg.Width)
+
 		headerHeight := m.getHeaderLineCount()
+		pluginHeaderHeight := m.getPluginHeaderLineCount()
+
 		bodyHeight := max(0, msg.Height-headerHeight)
+		pluginBodyHeight := max(0, msg.Height-pluginHeaderHeight)
 
 		borderV := activeBorderStyle.GetVerticalBorderSize()
 		borderH := activeBorderStyle.GetHorizontalBorderSize()
@@ -85,7 +91,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetWidth(max(0, viewportWidth-borderH))
 		m.viewport.SetHeight(viewportHeight)
 		m.pluginViewport.SetWidth(msg.Width)
-		m.pluginViewport.SetHeight(max(0, bodyHeight-arrowHeight))
+		m.pluginViewport.SetHeight(max(0, pluginBodyHeight-arrowHeight))
 
 		return m, nil
 
@@ -218,7 +224,7 @@ func buildMainView(m model) string {
 func buildPluginView(m model) string {
 	topArrow, bottomArrow := setViewportArrows(m.pluginViewport)
 	viewportString := lipgloss.JoinVertical(lipgloss.Left, topArrow, m.pluginViewport.View(), bottomArrow)
-	return lipgloss.JoinVertical(lipgloss.Left, m.header, viewportString)
+	return lipgloss.JoinVertical(lipgloss.Left, m.pluginHeader, viewportString)
 }
 
 func initialModel() model {
@@ -227,7 +233,7 @@ func initialModel() model {
 	m.setProductList()
 	m.updateProductListStyles()
 	m.setDownloadList()
-	m.setHeaderString("KiTiK Store")
+	m.updateHeaders(80)
 	m.setViewport()
 	m.setPluginViewport()
 
