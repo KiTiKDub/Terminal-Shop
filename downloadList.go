@@ -42,9 +42,10 @@ func (h HorizontalList) View() string {
 
 	for i, item := range h.items {
 		label := item.Title()
-		if label == "Download" {
+		switch label {
+		case "Download":
 			label = "⬇ Download Direct"
-		} else if label == "Gumroad" {
+		case "Gumroad":
 			label = "🛒 Gumroad Store"
 		}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -34,8 +33,8 @@ const (
 )
 
 const (
-	host = "localhost"
-	port = "11111"
+	// host = "localhost"
+	port = "2222"
 )
 
 var (
@@ -251,9 +250,19 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
 func main() {
 
+	var keyMount string
+	prd := os.Getenv("FLY_APP_NAME")
+	// fmt.Println(prd)
+
+	if prd != "" {
+		keyMount = "/data/ssh/id_ed25519"
+	} else {
+		keyMount = "./ssh/id_ed25519"
+	}
+
 	s, err := wish.NewServer(
-		wish.WithAddress(net.JoinHostPort(host, port)),
-		wish.WithHostKeyPath(".ssh/id_ed25519"),
+		wish.WithAddress(":"+port),
+		wish.WithHostKeyPath(keyMount),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 			return true
 		}),
@@ -269,7 +278,7 @@ func main() {
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	log.Printf("Starting SSH server on %s:%s", host, port)
+	log.Printf("Starting SSH server on %s:%s", "0.0.0.0", port)
 
 	go func() {
 		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {

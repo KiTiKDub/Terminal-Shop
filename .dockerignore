@@ -1,0 +1,6 @@
+# flyctl launch added from .gitignore
+**/terminal-store
+**/.ssh/*
+**/ssh/*
+fly.toml
+.git
