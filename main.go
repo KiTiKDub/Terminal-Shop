@@ -34,7 +34,8 @@ const (
 
 const (
 	// host = "localhost"
-	port = "2222"
+	sshPort  = "2222"
+	httpPort = "8080"
 )
 
 var (
@@ -261,7 +262,7 @@ func main() {
 	}
 
 	s, err := wish.NewServer(
-		wish.WithAddress(":"+port),
+		wish.WithAddress(":"+sshPort),
 		wish.WithHostKeyPath(keyMount),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 			return true
@@ -278,7 +279,7 @@ func main() {
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	log.Printf("Starting SSH server on %s:%s", "0.0.0.0", port)
+	log.Printf("Starting SSH server on %s:%s", "0.0.0.0", sshPort)
 
 	go func() {
 		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
