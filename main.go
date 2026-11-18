@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -22,6 +26,8 @@ import (
 	"charm.land/wish/v2/activeterm"
 	btm "charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
+
+	"github.com/muesli/termenv"
 )
 
 type focusPane int
@@ -44,14 +50,17 @@ var (
 )
 
 type model struct {
+	files          []string
 	session        ssh.Session
+	serverHost     string
 	list           list.Model
 	downloadList   HorizontalList
 	viewport       viewport.Model
 	pluginViewport viewport.Model
 	lastSelected   string
 	choice         string
-	downloadMsg    string
+	downloadLink   string
+	downloadMsg    string //this will probably go away
 	styles         listStyle
 	quitting       bool
 	focus          focusPane
@@ -112,6 +121,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				m.choice = string(i.title)
 				m.focus = pluginPane
+
+				selectedFile := m.files[m.list.Cursor()]
+				token := createDownloadToken(selectedFile)
+				url := fmt.Sprintf("http://%s:%s/dl/%s", m.serverHost, httpPort, token)
+
+				label := fmt.Sprintf("👉 Ctrl+Click here to download %s", filepath.Base(selectedFile))
+				m.downloadLink = termenv.Hyperlink(url, label)
+
+				m.addDownloadLink(m.downloadLink)
 				m.setPluginViewportContent()
 				return m, nil
 			}
@@ -232,7 +250,7 @@ func initialModel() model {
 	m := model{}
 	m.setProductList()
 	m.updateProductListStyles()
-	m.setDownloadList()
+	m.initDownloadList()
 	m.updateHeaders(80)
 	m.setViewport()
 	m.setPluginViewport()
@@ -242,8 +260,16 @@ func initialModel() model {
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
+	host, _, err := net.SplitHostPort(s.LocalAddr().String())
+
+	if err != nil || host == "" || host == "::" || host == "0.0.0.0" {
+		host = "localhost"
+	}
+
 	m := initialModel()
 	m.session = s
+	m.serverHost = host
+	m.files = []string{"mystuff"}
 
 	return m, []tea.ProgramOption{}
 
@@ -251,9 +277,15 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
 func main() {
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/dl/", downloadHandler)
+	httpServer := &http.Server{
+		Addr:    ":" + httpPort,
+		Handler: mux,
+	}
+
 	var keyMount string
 	prd := os.Getenv("FLY_APP_NAME")
-	// fmt.Println(prd)
 
 	if prd != "" {
 		keyMount = "/data/ssh/id_ed25519"
@@ -279,22 +311,27 @@ func main() {
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	log.Printf("Starting SSH server on %s:%s", "0.0.0.0", sshPort)
+	log.Printf("Starting SSH server on :%s", sshPort)
+	log.Printf("Starting HTTP server on :%s", httpPort)
 
 	go func() {
 		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
-			log.Fatalln("Could not start server", "error", err)
-			done <- nil
+			log.Fatalln("Could not start SSH server", "error", err)
+		}
+	}()
+
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalln("Could not start HTTP Server", "error", err)
 		}
 	}()
 
 	<-done
 
-	log.Println("Stopping SSH server...")
+	log.Println("Stopping servers...")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := s.Shutdown(ctx); err != nil {
-		log.Fatalln(err)
-		os.Exit(1)
-	}
+	_ = s.Shutdown(ctx)
+	_ = httpServer.Shutdown(ctx)
+
 }

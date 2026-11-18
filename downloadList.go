@@ -64,9 +64,15 @@ func (h HorizontalList) View() string {
 	return lipgloss.JoinVertical(lipgloss.Center, buttons, hints)
 }
 
-func (m *model) setDownloadList() {
+func (m *model) initDownloadList() {
 	m.downloadList.items = []item{
-		{"Download", "Download straight from the server", "N/A", false},
-		{"Gumroad", "Purchase Straight from Gumraod", "N/A", false},
+		// {"Download", "Download straight from the server", "N/A", false},
+		{"Coming Soon", "Purchase Straight from Gumraod", "N/A", false},
 	}
+}
+
+func (m *model) addDownloadLink(link string) {
+	newItem := item{link, "Click here to download!", "N/A", false}
+
+	m.downloadList.items = append(m.downloadList.items, newItem)
 }
