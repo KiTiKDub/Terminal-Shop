@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -56,4 +58,16 @@ func downloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename=%s`, filename))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	http.ServeFile(w, r, entry.filePath)
+}
+
+func getPublicBaseURL() string {
+	if base := strings.TrimRight(os.Getenv("PUBLIC_BASE_URL"), "/"); base != "" {
+		return base
+	}
+
+	if appName := os.Getenv("FLY_APP_NAME"); appName != "" {
+		return fmt.Sprintf("https://%s.fly.dev", appName)
+	}
+
+	return "http://localhost:" + httpPort
 }

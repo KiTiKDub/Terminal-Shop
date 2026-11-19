@@ -3,3 +3,4 @@ go.sum
 terminal-store
 .ssh/*
 ssh/*
+plugin-files/*

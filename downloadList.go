@@ -1,6 +1,10 @@
 package main
 
-import "charm.land/lipgloss/v2"
+import (
+	"slices"
+
+	"charm.land/lipgloss/v2"
+)
 
 type HorizontalList struct {
 	items  []item
@@ -72,7 +76,11 @@ func (m *model) initDownloadList() {
 }
 
 func (m *model) addDownloadLink(link string) {
-	newItem := item{link, "Click here to download!", "N/A", false}
 
+	m.downloadList.items = slices.DeleteFunc(m.downloadList.items, func(i item) bool {
+		return i.title != "Coming Soon"
+	})
+
+	newItem := item{link, "Click here to download!", "N/A", false}
 	m.downloadList.items = append(m.downloadList.items, newItem)
 }

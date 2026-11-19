@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -60,7 +59,6 @@ type model struct {
 	lastSelected   string
 	choice         string
 	downloadLink   string
-	downloadMsg    string //this will probably go away
 	styles         listStyle
 	quitting       bool
 	focus          focusPane
@@ -112,11 +110,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 
-			if m.focus == pluginPane && m.downloadList.SelectedItem().title == "Download" {
-				m.downloadMsg = download(m.choice)
-				return m, nil
-			}
-
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
 				m.choice = string(i.title)
@@ -148,7 +141,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "backspace", "esc":
 			m.choice = ""
-			m.downloadMsg = ""
 			m.focus = listPane
 			return m, nil
 
@@ -192,11 +184,6 @@ func (m model) View() tea.View {
 
 	if m.quitting {
 		return tea.NewView(m.styles.quitText.Render("Thanks for shopping!"))
-	}
-	if m.downloadMsg != "" {
-		v := tea.NewView(m.downloadMsg)
-		v.AltScreen = true
-		return v
 	}
 	if m.choice != "" {
 		v := tea.NewView(buildPluginView(m))
@@ -260,16 +247,10 @@ func initialModel() model {
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
-	host, _, err := net.SplitHostPort(s.LocalAddr().String())
-
-	if err != nil || host == "" || host == "::" || host == "0.0.0.0" {
-		host = "localhost"
-	}
-
 	m := initialModel()
 	m.session = s
-	m.serverHost = host
-	m.files = []string{"mystuff"}
+	m.serverHost = getPublicBaseURL()
+	m.files = []string{"./plugin-files/Disburser.zip", "./plugin-files/Qwikref.zip", "./plugin-files/ChopChop.zip", "./plugin-files/Mangl3r.zip", "./plugin-files/Distork.zip", "./plugin-files/Krush.zip", "./plugin-files/KKV1.zip"}
 
 	return m, []tea.ProgramOption{}
 

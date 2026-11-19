@@ -14,4 +14,5 @@ WORKDIR /app
 
 COPY --from=builder /run-app /usr/local/bin/
 COPY --from=builder /usr/src/app/Assets ./Assets
+COPY --from=builder /usr/src/app/plugin-files ./plugin-files
 CMD ["run-app"]
