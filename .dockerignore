@@ -2,4 +2,5 @@
 **/terminal-store
 **/.ssh/*
 **/ssh/*
-.git
+fly.toml
+.gitignore

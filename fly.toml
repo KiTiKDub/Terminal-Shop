@@ -10,27 +10,31 @@ primary_region = 'lax'
   [build.args]
     GO_VERSION = '1.27.2'
 
+[env]
+  PUBLIC_URL = "https://shop.kitik.tech"
+
 [mounts]
   source = "wish_data"
   destination = "/data"
 
-# 2. Raw TCP service for Wish SSH & SFTP
+# Raw TCP service for Wish SSH & SFTP
 [[services]]
   protocol = "tcp"
-  internal_port = 2222 # The port your Go Wish app listens on internally
-  auto_stop_machines = "suspend" # Or "off" — Fly wakes machines on TCP syn!
+  internal_port = 2222
+  auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
 
   [[services.ports]]
     port = 22
-    handlers = [] # CRITICAL: Must be empty for raw SSH/SFTP traffic
+    handlers = []
 
   [[services.tcp_checks]]
     interval = "15s"
     timeout = "2s"
     grace_period = "5s"
 
+# HTTP/HTTPS service for Go net/http downloads (automatically binds external 80 & 443)
 [http_service]
   internal_port = 8080
   force_https = true
@@ -48,6 +52,3 @@ primary_region = 'lax'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
-
-[[env]]
-  PUBLIC_URL = "https://shop.kitik.tech"

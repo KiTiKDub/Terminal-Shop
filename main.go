@@ -46,6 +46,7 @@ const (
 var (
 	activeBorderStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("39"))
 	inactiveBorderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("238"))
+	prd                 = os.Getenv("FLY_APP_NAME")
 )
 
 type model struct {
@@ -117,7 +118,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				selectedFile := m.files[m.list.Cursor()]
 				token := createDownloadToken(selectedFile)
-				url := fmt.Sprintf("http://%s:%s/dl/%s", m.serverHost, httpPort, token)
+
+				var url string
+				if prd == "" {
+					url = fmt.Sprintf("http://%s:%s/dl/%s", m.serverHost, httpPort, token)
+				} else {
+					url = fmt.Sprintf("%s/dl/%s", m.serverHost, token)
+				}
 
 				label := fmt.Sprintf("👉 Ctrl+Click here to download %s", filepath.Base(selectedFile))
 				m.downloadLink = termenv.Hyperlink(url, label)
@@ -266,7 +273,6 @@ func main() {
 	}
 
 	var keyMount string
-	prd := os.Getenv("FLY_APP_NAME")
 
 	if prd != "" {
 		keyMount = "/data/ssh/id_ed25519"
