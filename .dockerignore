@@ -2,5 +2,4 @@
 **/terminal-store
 **/.ssh/*
 **/ssh/*
-fly.toml
 .git
