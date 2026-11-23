@@ -7,13 +7,13 @@ import (
 
 var (
 	pluginHeaderStyle = lipgloss.NewStyle().
-		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("39")).
-		Bold(true)
+				Align(lipgloss.Center).
+				Foreground(lipgloss.Color("39")).
+				Bold(true)
 
 	pluginSubtitleStyle = lipgloss.NewStyle().
-		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("244"))
+				Align(lipgloss.Center).
+				Foreground(lipgloss.Color("244"))
 )
 
 func (m *model) setPluginViewportContent() {
@@ -37,8 +37,8 @@ func (m *model) setPluginViewportContent() {
 		msg = renderANSIHalfBlocks("Distork.png", vpWidth)
 	case "Krush":
 		msg = renderANSIHalfBlocks("KITIK_LOGO_NO_BKGD.png", vpWidth)
-	case "KiTiK Kollection Vol 1":
-		msg = renderANSIHalfBlocks("kol.jpg", vpWidth)
+	// case "KiTiK Kollection Vol 1":
+	// 	msg = renderANSIHalfBlocks("kol.jpg", vpWidth)
 	default:
 		msg = "default " + m.choice
 	}

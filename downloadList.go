@@ -28,6 +28,10 @@ func (h HorizontalList) SelectedItem() item {
 	return h.items[h.cursor]
 }
 
+func (h *HorizontalList) resetSelected() {
+	h.cursor = 0
+}
+
 func (h HorizontalList) View() string {
 	var renderedItems []string
 

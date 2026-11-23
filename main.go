@@ -113,6 +113,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 
+			downloadSelect := m.downloadList.SelectedItem()
+			if downloadSelect.title != "Coming Soon" {
+				keygen := "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N \"\""
+				keygenPS := "ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519 -N '\"\"'"
+				m.signInInstuction = "To sign in to the app: \n" +
+					"Quit the program and enter \n" +
+					keygen +
+					"\nthen ssh back in\n\n" +
+					"IF USING WINDOWS POWERSHELL: \n" +
+					keygenPS
+				return m, nil
+			}
+
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
 				m.choice = string(i.title)
@@ -146,11 +159,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			downloadSelect := m.downloadList.SelectedItem()
-			if downloadSelect.title != "Coming Soon" {
-				m.signInInstuction = "To sign in to the app: \n Quit the program and enter \n ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N \"\" \n then ssh back in"
-			}
-
 		case "left":
 			if m.choice != "" {
 				m.downloadList.MoveLeft()
@@ -166,6 +174,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "backspace", "esc":
 			m.choice = ""
 			m.signInInstuction = ""
+			m.downloadList.resetSelected()
 			m.focus = listPane
 			return m, nil
 

@@ -59,14 +59,14 @@ func getKrushDesc() string {
 	return s
 }
 
-func getKollectionV1Desc() string {
-	s := "All my samples in one mega bundle for one low price!\n\n" +
-		"In this pack you will get:\n" +
-		"50 Serum presets\n" +
-		"50 Vital Presets\n" +
-		"100 WaveTables\n" +
-		"200 Drum Samples (Kick, Snare, Clap, Crashes, Rides, Foley, Loops, Extras)\n" +
-		"150 Bass Samples (One Shoots, fx, ambience, bassy goodness)"
+// func getKollectionV1Desc() string {
+// 	s := "All my samples in one mega bundle for one low price!\n\n" +
+// 		"In this pack you will get:\n" +
+// 		"50 Serum presets\n" +
+// 		"50 Vital Presets\n" +
+// 		"100 WaveTables\n" +
+// 		"200 Drum Samples (Kick, Snare, Clap, Crashes, Rides, Foley, Loops, Extras)\n" +
+// 		"150 Bass Samples (One Shoots, fx, ambience, bassy goodness)"
 
-	return s
-}
+// 	return s
+// }

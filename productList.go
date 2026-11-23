@@ -113,7 +113,7 @@ func (m *model) setProductList() {
 		item{"Mangl3r", getMangl3rDesc(), "FREE", true},
 		item{"Distork", getDistorkDesc(), "FREE", true},
 		item{"Krush", getKrushDesc(), "FREE", true},
-		item{"KiTiK Kollection Vol 1", getKollectionV1Desc(), "$4.99", false},
+		// item{"KiTiK Kollection Vol 1", getKollectionV1Desc(), "$4.99", false},
 	}
 
 	const defaultWidth = 20
