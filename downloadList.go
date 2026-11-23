@@ -70,7 +70,6 @@ func (h HorizontalList) View() string {
 
 func (m *model) initDownloadList() {
 	m.downloadList.items = []item{
-		// {"Download", "Download straight from the server", "N/A", false},
 		{"Coming Soon", "Purchase Straight from Gumraod", "N/A", false},
 	}
 }
@@ -78,9 +77,9 @@ func (m *model) initDownloadList() {
 func (m *model) addDownloadLink(link string) {
 
 	m.downloadList.items = slices.DeleteFunc(m.downloadList.items, func(i item) bool {
-		return i.title != "Coming Soon"
+		return i.description == "Click here to download!"
 	})
 
-	newItem := item{link, "Click here to download!", "N/A", false}
+	newItem := item{link, "Click here to download!", m.list.SelectedItem().(item).price, m.list.SelectedItem().(item).isPlugin}
 	m.downloadList.items = append(m.downloadList.items, newItem)
 }

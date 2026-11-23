@@ -25,6 +25,7 @@ import (
 	"charm.land/wish/v2/activeterm"
 	btm "charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
+	gossh "golang.org/x/crypto/ssh"
 
 	"github.com/muesli/termenv"
 )
@@ -50,21 +51,22 @@ var (
 )
 
 type model struct {
-	files          []string
-	session        ssh.Session
-	serverHost     string
-	list           list.Model
-	downloadList   HorizontalList
-	viewport       viewport.Model
-	pluginViewport viewport.Model
-	lastSelected   string
-	choice         string
-	downloadLink   string
-	styles         listStyle
-	quitting       bool
-	focus          focusPane
-	header         string
-	pluginHeader   string
+	files            []string
+	session          ssh.Session
+	serverHost       string
+	list             list.Model
+	downloadList     HorizontalList
+	viewport         viewport.Model
+	pluginViewport   viewport.Model
+	lastSelected     string
+	choice           string
+	downloadLink     string
+	styles           listStyle
+	quitting         bool
+	focus            focusPane
+	header           string
+	pluginHeader     string
+	signInInstuction string
 }
 
 func (m model) Init() tea.Cmd {
@@ -116,22 +118,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.choice = string(i.title)
 				m.focus = pluginPane
 
-				selectedFile := m.files[m.list.Cursor()]
-				token := createDownloadToken(selectedFile)
-
-				var url string
-				if prd == "" {
-					url = fmt.Sprintf("http://%s:%s/dl/%s", m.serverHost, httpPort, token)
-				} else {
-					url = fmt.Sprintf("%s/dl/%s", m.serverHost, token)
+				guestUser, ok := m.session.Context().Value("is_guest").(bool)
+				if !ok {
+					return m, nil
 				}
 
-				label := fmt.Sprintf("👉 Ctrl+Click here to download %s", filepath.Base(selectedFile))
-				m.downloadLink = termenv.Hyperlink(url, label)
+				if guestUser {
+					m.addDownloadLink("Sign in to download, highlight and enter for instructions")
+				} else {
+					selectedFile := m.files[m.list.Cursor()]
+					token := createDownloadToken(selectedFile)
 
-				m.addDownloadLink(m.downloadLink)
+					var url string
+					if prd == "" {
+						url = fmt.Sprintf("http://%s:%s/dl/%s", m.serverHost, httpPort, token)
+					} else {
+						url = fmt.Sprintf("%s/dl/%s", m.serverHost, token)
+					}
+
+					label := fmt.Sprintf("👉 Ctrl+Click here to download %s", filepath.Base(selectedFile))
+					m.downloadLink = termenv.Hyperlink(url, label)
+
+					m.addDownloadLink(m.downloadLink)
+				}
+
 				m.setPluginViewportContent()
 				return m, nil
+			}
+
+			downloadSelect := m.downloadList.SelectedItem()
+			if downloadSelect.title != "Coming Soon" {
+				m.signInInstuction = "To sign in to the app: \n Quit the program and enter \n ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N \"\" \n then ssh back in"
 			}
 
 		case "left":
@@ -148,6 +165,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "backspace", "esc":
 			m.choice = ""
+			m.signInInstuction = ""
 			m.focus = listPane
 			return m, nil
 
@@ -191,6 +209,11 @@ func (m model) View() tea.View {
 
 	if m.quitting {
 		return tea.NewView(m.styles.quitText.Render("Thanks for shopping!"))
+	}
+	if m.signInInstuction != "" {
+		v := tea.NewView(m.signInInstuction)
+		v.AltScreen = true
+		return v
 	}
 	if m.choice != "" {
 		v := tea.NewView(buildPluginView(m))
@@ -284,6 +307,15 @@ func main() {
 		wish.WithAddress(":"+sshPort),
 		wish.WithHostKeyPath(keyMount),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			ctx.SetValue("is_guest", false)
+			return true
+		}),
+		wish.WithKeyboardInteractiveAuth(func(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) bool {
+			_, err := challenger("", "", nil, nil)
+			if err != nil {
+				return false
+			}
+			ctx.SetValue("is_guest", true)
 			return true
 		}),
 		wish.WithMiddleware(
